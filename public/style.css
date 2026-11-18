@@ -51,3 +51,10 @@ article { white-space: pre-wrap; border-block: 1px solid #dce1e8; padding-block:
 .notice, .error { padding: 8px 12px; border-radius: 6px; }
 .notice { background: #eaf4ee; }
 .error { background: #fbecea; }
+
+.danger { background: #a12620; color: white; border-color: #a12620; }
+.danger:hover { background: #851d18; }
+.back-link { margin-inline-start: 6px; }
+.returned-label { display: inline-block; color: #a12620; font-size: .875rem; white-space: nowrap; }
+.return-note { background: #fbecea; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; }
+.return-note div { white-space: pre-wrap; overflow-wrap: anywhere; }
