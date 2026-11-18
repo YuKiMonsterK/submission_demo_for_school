@@ -34,10 +34,10 @@ a { color: #234797; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; text-align: left; border-bottom: 1px solid #dce1e8; }
 th { background: #f1f4f8; white-space: nowrap; }
-.title, article { overflow-wrap: anywhere; }
+.title, .category, .meta, article { overflow-wrap: anywhere; }
 .article-form { display: grid; gap: 8px; }
 .article-form label { font-weight: 600; }
-input, select, textarea {
+input, textarea {
     font: inherit;
     border: 1px solid #bec8d7;
     border-radius: 6px;

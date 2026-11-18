@@ -3,7 +3,6 @@ session_start();
 $_SESSION['token'] ??= bin2hex(random_bytes(32));
 $role = $_SESSION['role'] ?? '';
 $author = '示範作者';
-$categories = ['校園', '生活', '科技', '其他'];
 $statuses = ['draft' => '編輯中', 'pending' => '審查中', 'approved' => '已通過'];
 
 function h(string $value): string
@@ -60,7 +59,8 @@ try {
             // 同一條 SQL 同時檢查稿件目前的狀態並完成更新。
             if ($role === 'author' && in_array($action, ['create', 'update'], true)) {
                 foreach (array_keys($article) as $field) {
-                    $article[$field] = trim((string) ($_POST[$field] ?? ''));
+                    $value = $_POST[$field] ?? '';
+                    $article[$field] = is_string($value) ? trim($value) : '';
                 }
                 $page = 'form';
                 if ($action === 'create') {
@@ -68,9 +68,9 @@ try {
                 } elseif (!$id) {
                     redirectHome('找不到指定的稿件。');
                 }
-                if (!in_array($article['category'], $categories, true)
+                if (preg_match('/[^\s\p{Z}]/u', $article['category']) !== 1
                     || $article['title'] === '' || $article['body'] === '') {
-                    $error = '請選擇類別，並填寫標題與文章內容。';
+                    $error = '請填寫類別、標題與文章內容。';
                 } else {
                     $values = array_values($article);
                     $values[] = $author;
@@ -191,7 +191,7 @@ try {
                     <?php foreach ($rows as $row): ?>
                         <tr>
                             <?php if ($role === 'editor'): ?><td><?= h($row['author']) ?></td><?php endif; ?>
-                            <td><?= h($row['category']) ?></td>
+                            <td class="category"><?= h($row['category']) ?></td>
                             <td class="title"><?= h($row['title']) ?></td>
                             <?php if ($role === 'author'): ?>
                                 <td>
@@ -234,12 +234,7 @@ try {
             <?php tokenField(); ?>
             <?php if ($id): ?><input type="hidden" name="id" value="<?= $id ?>"><?php endif; ?>
             <label for="category">類別</label>
-            <select id="category" name="category" required>
-                <option value="">請選擇</option>
-                <?php foreach ($categories as $category): ?>
-                    <option <?= $article['category'] === $category ? 'selected' : '' ?>><?= h($category) ?></option>
-                <?php endforeach; ?>
-            </select>
+            <input id="category" name="category" value="<?= h($article['category']) ?>" placeholder="例如校園活動" required>
             <label for="title">標題</label>
             <input id="title" name="title" value="<?= h($article['title']) ?>" required>
             <label for="body">文章內容</label>
