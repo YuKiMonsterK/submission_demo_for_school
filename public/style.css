@@ -1,0 +1,53 @@
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: #f6f7f9;
+    color: #202632;
+    font: 16px/1.6 system-ui, "Microsoft JhengHei", sans-serif;
+}
+header, main { width: min(900px, calc(100% - 32px)); margin-inline: auto; }
+header, .heading, .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+header, .heading { justify-content: space-between; }
+header { padding-block: 16px; }
+main { background: white; border: 1px solid #dce1e8; border-radius: 10px; padding: clamp(16px, 4vw, 32px); }
+h1 { font-size: 1.6rem; margin: 0 0 12px; }
+.heading { margin-bottom: 12px; }
+.heading h1 { margin: 0; }
+a { color: #234797; }
+.brand { font-size: 1.1rem; font-weight: 700; color: inherit; text-decoration: none; }
+.button, button {
+    display: inline-block;
+    background: white;
+    color: #23304a;
+    border: 1px solid #bec8d7;
+    border-radius: 6px;
+    padding: 5px 11px;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.button:hover, button:hover { background: #edf1f7; }
+.primary, button[aria-pressed="true"] { background: #284f9f; color: white; border-color: #284f9f; }
+.primary:hover, button[aria-pressed="true"]:hover { background: #1d3b7c; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px; text-align: left; border-bottom: 1px solid #dce1e8; }
+th { background: #f1f4f8; white-space: nowrap; }
+.title, article { overflow-wrap: anywhere; }
+.article-form { display: grid; gap: 8px; }
+.article-form label { font-weight: 600; }
+input, select, textarea {
+    font: inherit;
+    border: 1px solid #bec8d7;
+    border-radius: 6px;
+    padding: 7px 10px;
+    margin-bottom: 8px;
+    min-width: 0;
+}
+textarea { resize: vertical; }
+article { white-space: pre-wrap; border-block: 1px solid #dce1e8; padding-block: 16px; margin-bottom: 16px; }
+.meta { color: #526077; }
+.notice, .error { padding: 8px 12px; border-radius: 6px; }
+.notice { background: #eaf4ee; }
+.error { background: #fbecea; }
