@@ -48,6 +48,7 @@ $message = $_SESSION['message'] ?? '';
 unset($_SESSION['message']);
 $error = '';
 $rows = [];
+$returnReason = '';
 $article = ['category' => '', 'title' => '', 'body' => ''];
 
 try {
@@ -90,20 +91,39 @@ try {
                     WHERE id = ? AND author = ? AND status = 'draft'", [$id, $author]);
                 redirectHome($result->rowCount() ? '稿件已送出。' : '這篇稿件目前無法送出。');
             } elseif ($role === 'editor' && $id && in_array($action, ['approve', 'return'], true)) {
-                $nextStatus = $action === 'approve' ? 'approved' : 'draft';
-                $result = query($db, "UPDATE submissions SET status = ? WHERE id = ? AND status = 'pending'", [$nextStatus, $id]);
-                $success = $action === 'approve' ? '稿件已通過。' : '稿件已退回給作者。';
-                redirectHome($result->rowCount() ? $success : '這篇稿件已離開待審查清單。');
+                $reasonInput = $_POST['return_reason'] ?? '';
+                $returnReason = is_string($reasonInput) ? trim($reasonInput) : '';
+                if ($action === 'return' && (preg_match('/[^\s\p{Z}]/u', $returnReason) !== 1)) {
+                    http_response_code(422);
+                    $error = '請填寫退回理由。';
+                    $page = 'review';
+                } else {
+                    if ($action === 'return') {
+                        $result = query($db, "UPDATE submissions SET status = 'draft', return_reason = ?
+                            WHERE id = ? AND status = 'pending'", [$returnReason, $id]);
+                        $success = '稿件已退回給作者。';
+                    } else {
+                        $result = query($db, "UPDATE submissions SET status = 'approved'
+                            WHERE id = ? AND status = 'pending'", [$id]);
+                        $success = '稿件已通過。';
+                    }
+                    redirectHome($result->rowCount() ? $success : '這篇稿件已離開待審查清單。');
+                }
             } else {
                 http_response_code(403);
                 exit('目前角色無法執行這項操作。');
             }
-        } elseif ($page === 'form' && $role === 'author') {
+        }
+        if ($page === 'form' && $role === 'author') {
             if ($id !== null) {
-                $article = query($db, "SELECT category, title, body FROM submissions
+                $savedArticle = query($db, "SELECT category, title, body, return_reason FROM submissions
                     WHERE id = ? AND author = ? AND status = 'draft'", [$id, $author])->fetch(PDO::FETCH_ASSOC);
-                if (!$article) {
+                if (!$savedArticle) {
                     redirectHome('這篇稿件目前無法編輯。');
+                }
+                $returnReason = $savedArticle['return_reason'] ?? '';
+                if (!$isPost) {
+                    $article = $savedArticle;
                 }
             }
         } elseif ($page === 'review' && $role === 'editor') {
@@ -115,7 +135,7 @@ try {
         } else {
             $page = 'list';
             $statement = $role === 'author'
-                ? query($db, 'SELECT id, category, title, status FROM submissions WHERE author = ? ORDER BY id DESC', [$author])
+                ? query($db, 'SELECT id, category, title, status, return_reason FROM submissions WHERE author = ? ORDER BY id DESC', [$author])
                 : query($db, "SELECT id, author, category, title FROM submissions WHERE status = 'pending' ORDER BY id");
             $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -173,7 +193,14 @@ try {
                             <?php if ($role === 'editor'): ?><td><?= h($row['author']) ?></td><?php endif; ?>
                             <td><?= h($row['category']) ?></td>
                             <td class="title"><?= h($row['title']) ?></td>
-                            <?php if ($role === 'author'): ?><td><?= h($statuses[$row['status']]) ?></td><?php endif; ?>
+                            <?php if ($role === 'author'): ?>
+                                <td>
+                                    <?= h($statuses[$row['status']]) ?>
+                                    <?php if ($row['status'] === 'draft' && $row['return_reason'] !== null): ?>
+                                        <span class="returned-label">曾被退回</span>
+                                    <?php endif; ?>
+                                </td>
+                            <?php endif; ?>
                             <td>
                                 <?php if ($role === 'editor'): ?>
                                     <a href="?page=review&amp;id=<?= (int) $row['id'] ?>">查看</a>
@@ -197,6 +224,12 @@ try {
         <?php endif; ?>
     <?php elseif ($page === 'form'): ?>
         <h1><?= $id ? '編輯稿件' : '新增稿件' ?></h1>
+        <?php if ($returnReason !== ''): ?>
+            <aside class="return-note">
+                <strong>最近一次退回理由</strong>
+                <div><?= h($returnReason) ?></div>
+            </aside>
+        <?php endif; ?>
         <form class="article-form" method="post" action="./">
             <?php tokenField(); ?>
             <?php if ($id): ?><input type="hidden" name="id" value="<?= $id ?>"><?php endif; ?>
@@ -220,12 +253,16 @@ try {
         <h1 class="title"><?= h($article['title']) ?></h1>
         <p class="meta">作者 <?= h($article['author']) ?> ・ <?= h($article['category']) ?></p>
         <article><?= h($article['body']) ?></article>
-        <form class="actions" method="post" action="./">
+        <form class="article-form" method="post" action="./">
             <?php tokenField(); ?>
             <input type="hidden" name="id" value="<?= $id ?>">
-            <button class="primary" name="action" value="approve">通過</button>
-            <button name="action" value="return">退回</button>
-            <a class="button" href="./">返回</a>
+            <label for="return_reason">退回理由（退回時必填）</label>
+            <textarea id="return_reason" name="return_reason" rows="3"><?= h($returnReason) ?></textarea>
+            <div class="actions">
+                <button class="primary" name="action" value="approve">通過</button>
+                <button class="danger" name="action" value="return">退回稿件</button>
+                <a class="back-link" href="./">返回清單</a>
+            </div>
         </form>
     <?php endif; ?>
 </main>
